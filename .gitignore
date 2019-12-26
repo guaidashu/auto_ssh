@@ -1,0 +1,7 @@
+.idea
+.vscode
+.DS_Store
+**/.DS_Store
+app/config/app_config.py
+app/config/server_config.py
+Pipfile.lock

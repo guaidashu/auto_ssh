@@ -17,7 +17,11 @@ class AutoDeploy(Thread):
     def __init__(self, init_db):
         super().__init__()
         self.db = init_db('AUTODEPLOY')
-        self.script_id = 1
+        try:
+            self.script_id = sys.argv[1]
+        except:
+            debug("error server id")
+            exit(1)
         self.cmd = self.get_cmd()
 
     def run(self):
@@ -69,14 +73,40 @@ class AutoDeploy(Thread):
         else:
             ssh.connect(hostname=server["host"], port=port, username=username, key_filename=pk)
 
-        stdin, stdout, stderr = ssh.exec_command(self.cmd)
+        stdin, stdout, stderr = ssh.exec_command(self.cmd["content"])
         result = stdout.read()
 
         if not result:
             result = stderr.read()
         ssh.close()
 
+        # 执行结果 入库
+        insert_result = self.insert(stdin, stdout, stderr, result, server)
+        if insert_result == 0:
+            debug("execute insert error")
+
         return result
+
+    def insert(self, stdin, stdout, stderr, result, server):
+        insert_arr = {
+            "in": stdin.read(),
+            "out": stdout.read(),
+            "err": stderr.read(),
+            "result": result,
+            "server_id": server["id"],
+            "host": server["host"],
+            "port": server["port"],
+            "user_name": server["user"],
+            "key_path": server["key_path"],
+            "script_id": self.cmd["id"],
+            "script_name": self.cmd["name"],
+            "script_content": self.cmd["content"]
+        }
+        lock.acquire()
+        sql = self.db.getInsertSql(insert_arr, "deploy_history")
+        insert_result = self.db.insert(sql, is_close_db=False)
+        lock.release()
+        return insert_result
 
     def get_cmd(self):
         """
@@ -90,9 +120,13 @@ class AutoDeploy(Thread):
         }, is_close_db=False, get_all=False)
         lock.release()
         try:
-            data = data["content"]
+            unused = data["content"]
         except:
-            data = "echo cmd is null"
+            data = {
+                "id": 0,
+                "name": "null",
+                "content": "echo cmd is null"
+            }
         return data
 
     def get_server_list(self):

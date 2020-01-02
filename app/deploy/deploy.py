@@ -4,6 +4,7 @@ Create by yy on 2019/12/25
 import sys
 import getopt
 import threading
+import time
 
 import paramiko
 from tool_yy import debug, Thread
@@ -100,7 +101,8 @@ class AutoDeploy(Thread):
             "key_path": server["key_path"],
             "script_id": self.cmd["id"],
             "script_name": self.cmd["name"],
-            "script_content": self.cmd["content"]
+            "script_content": self.cmd["content"],
+            "created_at": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
         }
         lock.acquire()
         sql = self.db.getInsertSql(insert_arr, "deploy_history")

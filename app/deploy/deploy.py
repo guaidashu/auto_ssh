@@ -90,7 +90,7 @@ class AutoDeploy(Thread):
 
     def insert(self, stdin, stdout, stderr, result, server):
         insert_arr = {
-            "in": stdin.read(),
+            "in": "",
             "out": stdout.read(),
             "err": stderr.read(),
             "result": result,

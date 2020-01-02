@@ -1,13 +1,14 @@
 """
 Create by yy on 2019/12/25
 """
+import datetime
 import sys
 import getopt
 import threading
 import time
 
 import paramiko
-from tool_yy import debug, Thread
+from tool_yy import debug, Thread, get_now_time_stamp, get_date_time
 
 __all__ = ["AutoDeploy"]
 
@@ -75,10 +76,10 @@ class AutoDeploy(Thread):
             ssh.connect(hostname=server["host"], port=port, username=username, key_filename=pk)
 
         stdin, stdout, stderr = ssh.exec_command(self.cmd["content"])
-        result = stdout.read()
+        result = stdout.read().decode("utf-8")
 
         if not result:
-            result = stderr.read()
+            result = stderr.read().decode("utf-8")
         ssh.close()
 
         # 执行结果 入库
@@ -89,10 +90,12 @@ class AutoDeploy(Thread):
         return result
 
     def insert(self, stdin, stdout, stderr, result, server):
+        dt = datetime.datetime.now()
+        dt = dt.strftime("%Y-%m-%d %H:%M:%S")
         insert_arr = {
-            "in": "",
-            "out": stdout.read(),
-            "err": stderr.read(),
+            "in_content": "",
+            "out_content": stdout.read().decode("utf-8"),
+            "err": stderr.read().decode("utf-8"),
             "result": result,
             "server_id": server["id"],
             "host": server["host"],
@@ -102,7 +105,8 @@ class AutoDeploy(Thread):
             "script_id": self.cmd["id"],
             "script_name": self.cmd["name"],
             "script_content": self.cmd["content"],
-            "created_at": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
+            "created_at": dt,
+            "status": 1
         }
         lock.acquire()
         sql = self.db.getInsertSql(insert_arr, "deploy_history")

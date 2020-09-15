@@ -8,7 +8,7 @@ import threading
 import time
 
 import paramiko
-from tool_yy import debug, Thread, get_now_time_stamp, get_date_time
+from tool_yy import debug, Thread
 
 __all__ = ["AutoDeploy"]
 
